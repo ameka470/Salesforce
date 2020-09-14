@@ -1,0 +1,72 @@
+global class ContactZipCodeApiCallout{
+    
+    global static void handleCallout(List<contact> conList,List<Travel_Radius_Zipcodes__c> toDeleteZipCodeList){
+        Map<Id,Contact> mapProcessedConIdToCon = new Map<Id,Contact> ();
+        List<Travel_Radius_Zipcodes__c> zipCodesToInsert = new List<Travel_Radius_Zipcodes__c>();
+        system.debug('conList ==>'+conList);
+        try{
+        Settings__c settingRec = Settings__c.getInstance('ContactZipCodeApi');
+        for(Contact con : conList){
+            //Create a custom setting to store the API key
+            String endPoint = settingRec.Value1__c + settingRec.Value2__c + settingRec.Value3__c +
+                              con.MailingPostalCode+'/'+con.Travel_Radius_Miles__c+'/'+settingRec.Value4__c;
+            http p = new http();
+            httprequest req = new httprequest();
+            req.setEndpoint(endPoint);
+            req.setMethod('GET');
+            req.setHeader('x-api-key',settingRec.Value2__c);
+            httpresponse resp = new httpresponse();
+            resp = p.send(req);
+            system.debug('resp ==>'+resp.getBody());
+            //system.debug('resp ==>'+resp.getBodyDocument());
+            
+            if(resp.getStatusCode() == 200){
+                
+                 system.debug('conList[0] ==>'+conList[0]);
+                system.debug('resp.getBodyAsBlob() ==>'+resp.getBodyAsBlob());
+            /*    Blob txtBlob = Blob.valueOf(resp.getBodyAsBlob()); //Convert it to a blob
+
+    Attachment attach = new Attachment(); //Make an attachment
+    attach.Name ='txt.json';  
+    attach.Body = txtBlob;
+    attach.ContentType= 'application/json'; //Signal what the file's MIME type is
+    attach.ParentID = [conList];
+    insert attach;*/
+                
+                
+                contactZipCodeWrapper zipcodeWrapper  = contactZipCodeWrapper.parse(String.ValueOf(resp.getBody()));
+                system.debug('zipcodeList.zip_codes ==>'+zipcodeWrapper.zip_codes);
+                system.debug('zipcodeList Size ==>'+zipcodeWrapper.zip_codes.size());
+                for(String zipCode : zipcodeWrapper.zip_codes){
+                   Travel_Radius_Zipcodes__c travelZipCodeObj = new Travel_Radius_Zipcodes__c();
+                            travelZipCodeObj.Name = zipCode;
+                            travelZipCodeObj.Contact__c = con.Id;
+                            travelZipCodeObj.Contact_Zip_Code__c = con.MailingPostalCode;
+                            travelZipCodeObj.Travel_Radius__c = String.Valueof(con.Travel_Radius_Miles__c);
+                            travelZipCodeObj.Zipcode_within_radius__c = zipCode;
+                            zipCodesToInsert.add(travelZipCodeObj);
+                }
+                
+                con.Calculate_Travel_Radius_ZipCodes__c = false;
+                mapProcessedConIdToCon.put(con.Id,con);
+                system.debug('zipCodesToInsert ==>'+zipCodesToInsert);
+                system.debug('mapProcessedConIdToCon ==>'+mapProcessedConIdToCon);
+            }
+        }
+        if(toDeleteZipCodeList!=null && !toDeleteZipCodeList.isEmpty()){
+            system.debug('deleting zipcodelist ==>'+toDeleteZipCodeList.size());
+            database.delete(toDeleteZipCodeList);        
+        }    
+        if(zipCodesToInsert!=null && !zipCodesToInsert.isEmpty()){
+            database.insert(zipCodesToInsert);
+        }
+        if(mapProcessedConIdToCon!=null && !mapProcessedConIdToCon.isEmpty()){
+            database.update(mapProcessedConIdToCon.Values());
+        }
+    }
+    
+    Catch(Exception e){
+        system.debug('Exception occured in ContactZipCodeApiCallout ==>'+e);
+    }
+    }
+}
