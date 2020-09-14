@@ -1,0 +1,6 @@
+global class ContactTravelZipCodesBatchScheduler implements schedulable{
+    
+    global void execute(SchedulableContext sc){
+        Database.executeBatch(new ContactTravelZipCodesBatch(),20);
+    }
+}
