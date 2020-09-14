@@ -1,0 +1,78 @@
+Public class ZipCodeAPI{
+  public static boolean isApexTest = false;  
+@future (callout=true)
+  public static void find(Id Id, string origin,String destination) {
+   
+   Integer distance  = 0;
+     Distance__c d = [select distance__c from Distance__c where Id=:Id  limit 1];
+     String start1= EncodingUtil.urlEncode(origin,'UTF-8'); 
+     String destination1= EncodingUtil.urlEncode(destination,'UTF-8');
+           
+     //http://maps.googleapis.com/maps/api/distancematrix/xml?origins=Vancouver+BC&destinations=San+Francisco&sensor=false
+     HttpRequest req = new HttpRequest();
+   
+     req.setTimeout(12000);
+     
+     req.setEndpoint('https://maps.googleapis.com/maps/api/distancematrix/xml?origins='+start1+'&destinations='+destination1+'&sensor=false');
+     req.setMethod('GET');
+        
+     Http h = new HTTP();
+     
+     HttpResponse res;
+     // Send the request, and return a response   
+     try{
+        
+         system.debug('Request>>>>> '+req);
+         if(!isApexTest)
+            res = h.send(req);
+         else
+             res = new HttpResponse();   
+         
+         if(res.getStatusCode() == 200)
+         {
+          system.debug('*******Success********');
+    
+          Dom.Document doc = res.getBodyDocument();
+       
+          Dom.XMLNode response = doc.getRootElement();
+          
+          dom.XmlNode rowNode = response.getChildElement('row',response.getNamespace());
+          
+           for (Dom.XMLNode c: rowNode.getChildElements()) {
+               
+               if ('element'.equalsIgnoreCase(c.getName())){
+                   
+                   for(Dom.XMLNode c1: c.getchildElements()){
+                       
+                       if ('distance'.equalsIgnoreCase(c1.getName())){
+                       
+                           for(Dom.XMLNode c2: c1.getchildElements()){
+                       
+                               if('value'.equalsIgnoreCase(c2.getName())){
+                       
+                                   system.debug('Distance between two places@@@@>>>'+math.ceil(integer.valueOf(c2.getText())*0.000621371));
+                                   d.distance__c = (math.ceil(integer.valueOf(c2.getText())*0.000621371)).intValue();
+                                   d.completed__c = true;
+                                   update d;
+                               }
+                           }
+                           
+                       }
+                   }
+                   
+               }
+               
+           }
+                       
+          }else{
+    //do something...
+           System.debug('***Failed to make a callout***');   
+         }
+   
+       }Catch(System.CalloutException e){
+        //Failed to make a callout   
+        System.debug('***Failed to make a callout***');
+   
+       }   
+    }
+  }
