@@ -1,0 +1,9 @@
+public class contactZipCodeWrapper{
+
+  public List<String> zip_codes;
+
+  
+  public static contactZipCodeWrapper parse(String json) {
+    return (contactZipCodeWrapper) System.JSON.deserialize(json, contactZipCodeWrapper.class);
+  }
+}
