@@ -1,0 +1,32 @@
+global class RemoveDeploymentContactsBatch implements Database.Batchable<Sobject>,Database.stateful{
+global database.QueryLocator start (Database.BatchableContext dbc){
+        String contactQuery = 'Select id,Deployment_Owner__c FROM Contact WHERE Deployment_Owner__c != null ORDER BY id ASC LIMIT 5';// LIMIT 1';
+        system.debug('contactQuery ==>'+contactQuery);
+        system.debug('database.getQueryLocator(contactQuery) ==>'+database.getQueryLocator(contactQuery));
+        return database.getQueryLocator(contactQuery);
+}
+    global void execute(Database.BatchableContext dbc,List<Contact> contactList){
+        // List<Contact> contactList = new List<Contact>();
+         system.debug('contactList1 ==>'+contactList);
+        for(Contact ct : contactList){
+           system.debug('ct.Deployment_Owner__c ==>'+ct.Deployment_Owner__c);
+           ct.Deployment_Owner__c = null;           
+          // contactList.add( ct );
+                }
+          system.debug('contactList2 ==>'+contactList);
+          UPDATE contactList;
+          
+      /*  if( !contactList.isEmpty() ) {
+            UPDATE contactList;
+        }*/
+    }
+     global void finish(Database.BatchableContext dbc){
+     /*   Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+         mail.setToAddresses(new String[] {'ameka@470claims.com'});
+        mail.setReplyTo('ameka@470claims.com');
+        mail.setSenderDisplayName('Batch Processing');
+        mail.setSubject('Batch Process Completed');
+        mail.setPlainTextBody('Batch Process has completed');
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });  */     
+    }
+}
