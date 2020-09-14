@@ -1,0 +1,13 @@
+global class RemoveContactFromDeployment implements schedulable{
+    global void execute(SchedulableContext sc){      
+         RemoveDeploymentContactsBatch c = new RemoveDeploymentContactsBatch();
+                 system.debug('RemoveDeploymentContactsBatch c ==>'+c);
+              Database.executeBatch(c,200);
+      
+    }
+/*public void callBatch(){
+ RemoveContactFromDeployment c = new RemoveContactFromDeployment();
+ system.debug('RemoveContactFromDeployment ==>'+c);       
+ Database.executeBatch(c, 200);
+}*/
+}
