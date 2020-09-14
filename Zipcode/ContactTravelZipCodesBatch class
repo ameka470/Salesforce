@@ -1,0 +1,35 @@
+global class ContactTravelZipCodesBatch implements Database.Batchable<Sobject>,Database.AllowsCallouts,Database.stateful {
+    global Boolean delteExistingZipCodes = true;
+    global database.QueryLocator start (Database.BatchableContext dbc){
+        String contactQuery = 'Select id,Name,Travel_Radius_Miles__c,Status__c,Calculate_Travel_Radius_ZipCodes__c,MailingPostalCode FROM Contact WHERE Calculate_Travel_Radius_ZipCodes__c=true';// LIMIT ';
+        system.debug('contactQuery ==>'+contactQuery);
+        return database.getQueryLocator(contactQuery);
+    }
+    
+    global void execute(Database.BatchableContext dbc,List<Contact> contactList){
+        Set<Id> conIdSet = new Set<Id>();
+        List<Travel_Radius_Zipcodes__c> travelZipcodeList = new  List<Travel_Radius_Zipcodes__c>();
+        
+        if(contactList!=null && !contactList.isEmpty()){
+            if(delteExistingZipCodes){
+                for(Contact ct : contactList){
+                    conIdSet.add(ct.Id);
+                }
+                system.debug('delteExistingZipCodes ==>'+delteExistingZipCodes);
+                travelZipcodeList = [select id,Contact__c from Travel_Radius_Zipcodes__c
+                                                                     WHERE Contact__c in:conIdSet];
+                /*if(travelZipcodeList!=null && !travelZipcodeList.isEmpty()){
+                    database.delete(travelZipcodeList);
+                }*/
+                delteExistingZipCodes = false;    
+            }    
+            ContactZipCodeApiCallout.handleCallout(contactList,travelZipcodeList);
+        }
+    }
+    
+    global void finish(Database.BatchableContext dbc){
+        
+        
+    }
+    
+}
