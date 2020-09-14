@@ -1,0 +1,25 @@
+@isTest
+public class ContactTravelZipCodesBatchTest {
+    
+    testMethod public static void Test1(){
+        List<Settings__c> settingsList = new List<Settings__c>();
+        Settings__c zipcodeApiSetting = new Settings__c(Name='ContactZipCodeApi',Value1__c='https://www.zipcodeapi.com/rest/',Value2__c='test',Value3__c='test',Value4__c='test');
+        settingsList.add(zipcodeApiSetting);
+        insert settingsList;
+        Account acc = new Account(Name='470 IA');
+        insert acc;
+        Id conIARecTypeId = Schema.SObjectType.Contact.getRecordTypeInfosByName().get('IA').getRecordTypeId();
+        Contact con = new Contact(LastName='Test Con',MailingPostalCode = '60607',RecordTypeId=conIARecTypeId,
+                                  Status__c='Active',AccountId=acc.id,Travel_Radius_Miles__c= 1,Phase__c='Ready For Claims');
+        insert con;
+        con.Travel_Radius_Miles__c= 5;
+        update con;
+        system.debug('contact ===>'+con.Calculate_Travel_Radius_ZipCodes__c);
+        Test.startTest();
+        Test.setMock(HttpCalloutMock.class, new MockHttpResponseGenerator());
+        database.executeBatch(new ContactTravelZipCodesBatch(),5);
+        system.schedule('ContactTravelZipCodesBatchScheduler','0 5 * ? * *' , new ContactTravelZipCodesBatchScheduler());
+        Test.stopTest();
+     }
+
+}
